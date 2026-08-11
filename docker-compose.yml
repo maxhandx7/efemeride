@@ -1,0 +1,95 @@
+# Coolify: crea un recurso "Docker Compose" y pega esto.
+# Tres contenedores de la misma imagen: web, cron y cola.
+services:
+  app:
+    build: .
+    environment:
+      - SERVICE_FQDN_APP_8080
+      - APP_URL=$SERVICE_FQDN_APP
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_KEY=$SERVICE_BASE64_64_APPKEY
+      - DB_CONNECTION=sqlite
+      - DB_DATABASE=/var/www/html/storage/app/database/database.sqlite
+      - QUEUE_CONNECTION=database
+      - REMINDERS_TIMEZONE=America/Bogota
+      - WAHA_BASE_URL=${WAHA_BASE_URL:-http://waha:3000}
+      - WAHA_API_KEY=${WAHA_API_KEY}
+      - WAHA_SESSION=${WAHA_SESSION:-default}
+      - WAHA_DEFAULT_CHAT_ID=${WAHA_DEFAULT_CHAT_ID}
+      - WAHA_ADMIN_NUMBERS=${WAHA_ADMIN_NUMBERS}
+      - WAHA_WEBHOOK_SECRET=${WAHA_WEBHOOK_SECRET}
+      - PANEL_USER=${PANEL_USER:-alan}
+      - PANEL_PASSWORD=${PANEL_PASSWORD}
+      - REMINDERS_AI_ENABLED=${REMINDERS_AI_ENABLED:-false}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    volumes:
+      - efemeride-storage:/var/www/html/storage
+    networks:
+      - default
+      - waha-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/salud"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # El que mira el reloj. Un solo proceso, sin cron del sistema.
+  scheduler:
+    build: .
+    command: ["php", "/var/www/html/artisan", "schedule:work"]
+    environment:
+      - APP_ENV=production
+      - APP_KEY=$SERVICE_BASE64_64_APPKEY
+      - DB_CONNECTION=sqlite
+      - DB_DATABASE=/var/www/html/storage/app/database/database.sqlite
+      - QUEUE_CONNECTION=database
+      - REMINDERS_TIMEZONE=America/Bogota
+      - WAHA_BASE_URL=${WAHA_BASE_URL:-http://waha:3000}
+      - WAHA_API_KEY=${WAHA_API_KEY}
+      - WAHA_SESSION=${WAHA_SESSION:-default}
+      - WAHA_DEFAULT_CHAT_ID=${WAHA_DEFAULT_CHAT_ID}
+      - REMINDERS_AI_ENABLED=${REMINDERS_AI_ENABLED:-false}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    volumes:
+      - efemeride-storage:/var/www/html/storage
+    depends_on:
+      - app
+    networks:
+      - default
+      - waha-net
+
+  # El que realmente manda los mensajes, con reintentos.
+  worker:
+    build: .
+    command: ["php", "/var/www/html/artisan", "queue:work", "--sleep=3", "--tries=4", "--max-time=3600"]
+    environment:
+      - APP_ENV=production
+      - APP_KEY=$SERVICE_BASE64_64_APPKEY
+      - DB_CONNECTION=sqlite
+      - DB_DATABASE=/var/www/html/storage/app/database/database.sqlite
+      - QUEUE_CONNECTION=database
+      - REMINDERS_TIMEZONE=America/Bogota
+      - WAHA_BASE_URL=${WAHA_BASE_URL:-http://waha:3000}
+      - WAHA_API_KEY=${WAHA_API_KEY}
+      - WAHA_SESSION=${WAHA_SESSION:-default}
+      - WAHA_DEFAULT_CHAT_ID=${WAHA_DEFAULT_CHAT_ID}
+      - REMINDERS_AI_ENABLED=${REMINDERS_AI_ENABLED:-false}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    volumes:
+      - efemeride-storage:/var/www/html/storage
+    depends_on:
+      - app
+    networks:
+      - default
+      - waha-net
+
+volumes:
+  efemeride-storage:
+
+networks:
+  # Red donde ya vive tu contenedor de WAHA.
+  # Si WAHA corre en otro proyecto de Coolify, crea la red externa o usa su URL publica.
+  waha-net:
+    external: true
+    name: ${WAHA_NETWORK:-coolify}
