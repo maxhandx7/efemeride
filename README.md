@@ -156,10 +156,4 @@ app/
 
 ---
 
-## Ideas para después
 
-- Notificar también por Telegram o correo cuando WhatsApp esté caído.
-- Sugerir regalos con IA a partir de las notas y un presupuesto.
-- Sincronizar con Google Contacts para no escribir cumpleaños a mano.
-- Botón "ya lo felicité" que se responde desde el propio WhatsApp.
-- Multiusuario, si algún día esto deja de ser solo tuyo.
