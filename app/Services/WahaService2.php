@@ -39,47 +39,19 @@ class WahaService
             return $raw; // ya viene con sufijo (@c.us o @g.us)
         }
 
-        // Un + delante significa "ya viene completo, no le metas mano".
-        $isExplicit = str_starts_with($raw, '+');
-
         $digits = preg_replace('/\D+/', '', $raw);
 
         if ($digits === '') {
             throw new RuntimeException("No pude entender el destino: {$raw}");
         }
 
-        if (! $isExplicit) {
-            $digits = $this->addCountryCode($digits);
+        $cc = config('waha.country_code');
+
+        if (strlen($digits) === 10 && ! str_starts_with($digits, $cc)) {
+            $digits = $cc.$digits;
         }
 
         return $digits.'@c.us';
-    }
-
-    /**
-     * Antepone el prefijo pais solo cuando el numero parece local.
-     * Si ya viene con prefijo o tiene una longitud rara, se deja tal cual:
-     * mas vale que WAHA rechace un numero a que nosotros lo estropeemos.
-     */
-    protected function addCountryCode(string $digits): string
-    {
-        $cc = (string) config('waha.country_code');
-        $localLength = (int) config('waha.local_length');
-
-        if ($cc === '' || $localLength <= 0) {
-            return $digits;
-        }
-
-        // Ya viene completo: prefijo + numero local
-        if (strlen($digits) === strlen($cc) + $localLength && str_starts_with($digits, $cc)) {
-            return $digits;
-        }
-
-        // Numero local pelado: le ponemos el prefijo
-        if (strlen($digits) === $localLength) {
-            return $cc.$digits;
-        }
-
-        return $digits;
     }
 
     public function sendText(string $chatId, string $text): ?string

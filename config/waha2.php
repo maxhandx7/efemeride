@@ -13,13 +13,7 @@ return [
     'default_chat_id' => env('WAHA_DEFAULT_CHAT_ID'),
 
     // Prefijo pais para normalizar numeros escritos "a la colombiana" (3001112233)
-    // Prefijo pais que se antepone a los numeros escritos "en local" (3001112233).
-    // 57 Colombia · 34 Espana · 52 Mexico · 1 EEUU · 54 Argentina · 51 Peru
-    'country_code' => (string) env('WAHA_COUNTRY_CODE', '57'),
-
-    // Cuantos digitos tiene un numero local sin prefijo. En Colombia son 10 (300 111 2233),
-    // en Espana 9, en Mexico 10. Solo se antepone el prefijo si la cantidad coincide.
-    'local_length' => (int) env('WAHA_LOCAL_LENGTH', 10),
+    'country_code' => env('WAHA_COUNTRY_CODE', '57'),
 
     'timeout' => (int) env('WAHA_TIMEOUT', 20),
 
